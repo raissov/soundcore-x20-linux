@@ -1,0 +1,12 @@
+[Unit]
+Description=Индикатор наушников soundcore в панели
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+ExecStart=@PROJECT_DIR@/indicator.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

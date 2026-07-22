@@ -1,0 +1,117 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>hp-widget</title>
+<style>
+  :root {
+    --bg: rgba(22, 22, 26, 0.92);
+    --line: rgba(255, 255, 255, 0.10);
+    --fg: #f2f2f4;
+    --dim: rgba(242, 242, 244, 0.55);
+    --ok: #6ee7a8;
+    --warn: #ffd166;
+    --bad: #ff6b6b;
+  }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    font-family: "Golos Text", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--fg);
+    -webkit-user-select: none;
+    cursor: default;
+  }
+
+  /* Карточка едет внутри прозрачного окна — окно неподвижно, анимирует CSS */
+  #card {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px 14px 10px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+    transform: translateX(115%);
+    opacity: 0;
+    transition: transform 420ms cubic-bezier(.22,.9,.3,1), opacity 320ms ease,
+                border-color 200ms ease;
+    cursor: pointer;                 /* карточка кликабельна — открывает настройки */
+  }
+  #card:hover  { border-color: rgba(127, 215, 255, 0.38); }
+  #card.clicked { transform: scale(.97); }
+  #card.in  { transform: translateX(0);      opacity: 1; }
+  #card.out { transform: translateX(115%);   opacity: 0; }
+
+  #gl { width: 132px; height: 132px; flex: none; display: block; }
+
+  #info { flex: 1; min-width: 0; }
+
+  #name {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #anc {
+    font-size: 11.5px;
+    color: var(--dim);
+    margin: 2px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  #anc .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ok); flex: none;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    margin-bottom: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .row .lbl  { width: 32px; color: var(--dim); flex: none; }
+  .row .pct  { width: 34px; text-align: right; color: var(--dim); flex: none; }
+  .row .bar  {
+    flex: 1; height: 5px; border-radius: 3px;
+    background: rgba(255,255,255,.10); overflow: hidden;
+  }
+  .row .fill {
+    display: block;            /* span по умолчанию inline — width/height бы не применились */
+    height: 100%; width: 0%; border-radius: 3px;
+    background: var(--ok);
+    transition: width 600ms ease 120ms, background 300ms ease;
+  }
+  .row.absent .pct { opacity: .45; }
+  .row.absent .fill { width: 0 !important; }
+</style>
+
+<div id="card">
+  <canvas id="gl"></canvas>
+  <div id="info">
+    <div id="name">soundcore Sport X20</div>
+    <div id="anc"><span class="dot"></span><span id="ancText">—</span></div>
+    <div class="row" id="rowL">
+      <span class="lbl">Лев.</span><span class="bar"><span class="fill"></span></span><span class="pct">—</span>
+    </div>
+    <div class="row" id="rowR">
+      <span class="lbl">Прав.</span><span class="bar"><span class="fill"></span></span><span class="pct">—</span>
+    </div>
+    <div class="row" id="rowC">
+      <span class="lbl">Кейс</span><span class="bar"><span class="fill"></span></span><span class="pct">—</span>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./app.js"></script>

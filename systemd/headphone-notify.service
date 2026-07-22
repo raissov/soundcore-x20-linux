@@ -1,0 +1,10 @@
+[Unit]
+Description=Попап при подключении наушников soundcore
+After=bluetooth.target
+
+[Service]
+ExecStart=@PROJECT_DIR@/bin/headphone-notify.sh
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
