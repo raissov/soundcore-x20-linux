@@ -6,6 +6,7 @@
 . "$(dirname "$(readlink -f "$0")")/lib.sh"
 
 ICON="audio-headphones"
+DEVICE_NAME="soundcore Sport X20"
 
 # Страховка: если сигнал с шины почему-то потерялся, всё равно сверимся раз в N секунд
 RESYNC_SEC=60
@@ -92,17 +93,17 @@ notify_connected() {
     PERCENT=$(get_battery)
 
     CUR_ICON=$(battery_icon "$PERCENT")
-    TITLE="🎧 Наушники подключены"
+    TITLE="$T_notify_connected_title"
     URGENCY="normal"
 
     if is_num "$PERCENT"; then
-        BODY="soundcore Sport X20"$'\n'"$(battery_bar "$PERCENT") ${PERCENT}%"
+        BODY="$DEVICE_NAME"$'\n'"$(battery_bar "$PERCENT") ${PERCENT}%"
         if (( PERCENT < 20 )); then
-            TITLE="🎧⚠️ Наушники подключены — низкий заряд!"
+            TITLE="$T_notify_connected_low_title"
             URGENCY="critical"
         fi
     else
-        BODY="soundcore Sport X20"$'\n'"заряд неизвестен"
+        BODY="$DEVICE_NAME"$'\n'"$T_widget_battery_unknown"
     fi
 
     # Основной показ — 3D-виджет. Если он почему-то не поднялся,
@@ -112,9 +113,9 @@ notify_connected() {
     fi
 
     if is_num "$PERCENT"; then
-        echo "$(date '+%H:%M:%S')  подключение, заряд ${PERCENT}%"
+        echo "$(date '+%H:%M:%S')  $(fmt "$T_log_connected_battery" pct "$PERCENT")"
     else
-        echo "$(date '+%H:%M:%S')  подключение, заряд неизвестен"
+        echo "$(date '+%H:%M:%S')  $T_log_connected_unknown"
     fi
 }
 
@@ -127,7 +128,7 @@ check_state() {
     PREV="$CUR"
 }
 
-echo "Слушаю события DBus (org.bluez)... (Ctrl+C для остановки)"
+echo "$T_log_listening"
 
 cleanup() {
     [[ -n "${MON_PID:-}" ]] && kill "$MON_PID" 2>/dev/null
@@ -161,6 +162,6 @@ while true; do
 
     kill "$MON_PID" 2>/dev/null
     wait "$MON_PID" 2>/dev/null
-    echo "$(date '+%H:%M:%S')  монитор DBus завершился, перезапуск через ${RETRY_SEC}с"
+    echo "$(date '+%H:%M:%S')  $(fmt "$T_log_monitor_restart" sec "$RETRY_SEC")"
     sleep "$RETRY_SEC"
 done

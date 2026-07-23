@@ -10,18 +10,15 @@ set -uo pipefail
 
 CLI="${HP_OPENSCQ30_CLI:-${OPENSCQ30_CLI:-$HOME/.local/bin/openscq30-cli}}"
 CLI="${CLI/#\~/$HOME}"
+DEVICE_NAME="soundcore Sport X20"
 
 # Порядок перебора. Убрать "Normal", если нужен простой тумблер ANC <-> прозрачность.
 MODES=("NoiseCanceling" "Transparency" "Normal")
 
 # Человеческие названия и иконки (все проверены через Gtk.IconTheme.has_icon)
 label_of() {
-    case "$1" in
-        NoiseCanceling) printf '%s' "Шумоподавление" ;;
-        Transparency)   printf '%s' "Прозрачность" ;;
-        Normal)         printf '%s' "Обычный режим" ;;
-        *)              printf '%s' "$1" ;;
-    esac
+    local var="T_option_$1"
+    printf '%s' "${!var:-$1}"
 }
 
 icon_of() {
@@ -34,12 +31,12 @@ icon_of() {
 }
 
 fail() {
-    notify-send -i "dialog-error-symbolic" -u normal "🎧 ANC" "$1"
+    notify-send -i "dialog-error-symbolic" -u normal "$T_notify_anc_title" "$1"
     echo "$1" >&2
     exit 1
 }
 
-[[ -x "$CLI" ]] || fail "openscq30-cli не найден: $CLI"
+[[ -x "$CLI" ]] || fail "$(fmt "$T_notify_cli_missing" path "$CLI")"
 
 # После set устройство отдаёт новое состояние только через ~2с (измерено).
 # Поэтому при частых нажатиях крутим цикл от того, что сами поставили,
@@ -52,7 +49,7 @@ now=$(date +%s)
 # Что говорят наушники
 current=$("$CLI" device -a "$HEADSET_MAC" setting -g ambientSoundMode 2>/dev/null \
           | awk '/^ambientSoundMode/ {print $2}')
-[[ -n "$current" ]] || fail "Наушники не отвечают — подключены ли они?"
+[[ -n "$current" ]] || fail "$T_notify_not_responding"
 
 # Если сами переключали только что — верим себе, а не кэшу устройства
 if [[ -r "$STATE_FILE" ]]; then
@@ -75,7 +72,7 @@ done
 # Проверяем КОД ВОЗВРАТА, а не вывод: "get после set" по документации CLI
 # просто печатает обратно то, что мы задали, и ничего не подтверждает.
 if ! "$CLI" device -a "$HEADSET_MAC" setting -s "ambientSoundMode=$next" >/dev/null 2>&1; then
-    fail "Не удалось переключить в $(label_of "$next")"
+    fail "$(fmt "$T_notify_switch_failed" mode "$(label_of "$next")")"
 fi
 applied="$next"
 printf '%s %s\n' "$next" "$now" > "$STATE_FILE"
@@ -85,15 +82,14 @@ extra=""
 if [[ "$applied" == "NoiseCanceling" ]]; then
     strength=$("$CLI" device -a "$HEADSET_MAC" setting -g manualNoiseCanceling 2>/dev/null \
                | awk '/^manualNoiseCanceling/ {print $2}')
-    case "$strength" in
-        Weak)     extra=$'\n'"сила: слабое" ;;
-        Moderate) extra=$'\n'"сила: среднее" ;;
-        Strong)   extra=$'\n'"сила: сильное" ;;
-    esac
+    if [[ -n "$strength" ]]; then
+        svar="T_option_$strength"
+        extra=$'\n'"${T_notify_strength_prefix}$(printf '%s' "${!svar:-$strength}" | tr '[:upper:]' '[:lower:]')"
+    fi
 fi
 
 notify-send -i "$(icon_of "$applied")" -u low -t 1500 \
     "🎧 $(label_of "$applied")" \
-    "soundcore Sport X20${extra}"
+    "${DEVICE_NAME}${extra}"
 
 echo "$(date '+%H:%M:%S')  $current -> $applied"

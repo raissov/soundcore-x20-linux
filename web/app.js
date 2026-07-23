@@ -45,11 +45,12 @@ function setRow(id, raw) {
   return pct;
 }
 
-const ANC_LABEL = {
-  NoiseCanceling: 'Шумоподавление',
-  Transparency: 'Прозрачность',
-  Normal: 'Обычный режим',
-};
+let I18N = {};
+
+function tr(key, fallback) {
+  const v = I18N[key];
+  return v === undefined ? fallback : v;
+}
 
 const ANC_COLOR = {
   NoiseCanceling: '#7fd7ff',
@@ -58,7 +59,13 @@ const ANC_COLOR = {
 };
 
 function setData(d) {
+  if (d.i18n) I18N = d.i18n;
   if (d.name) document.getElementById('name').textContent = d.name;
+
+  // подписи строк заряда — из общего каталога
+  document.querySelector('#rowL .lbl').textContent = tr('widget.left', 'Left');
+  document.querySelector('#rowR .lbl').textContent = tr('widget.right', 'Right');
+  document.querySelector('#rowC .lbl').textContent = tr('widget.case', 'Case');
 
   const l = setRow('rowL', d.left);
   const r = setRow('rowR', d.right);
@@ -71,7 +78,8 @@ function setData(d) {
   }
 
   const mode = d.anc || '';
-  const text = ANC_LABEL[mode] || (mode || 'режим неизвестен');
+  const text = mode ? tr('option.' + mode, mode)
+                    : tr('widget.mode_unknown', 'mode unknown');
   document.getElementById('ancText').textContent =
     text + (mode === 'NoiseCanceling' && d.strength ? ` · ${d.strength}` : '');
   document.querySelector('#anc .dot').style.background =

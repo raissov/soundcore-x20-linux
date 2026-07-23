@@ -22,6 +22,8 @@ from gi.repository import Gdk, GLib, Gtk, WebKit2  # noqa: E402
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import hpcommon as hp  # noqa: E402
+import i18n  # noqa: E402
+from i18n import t  # noqa: E402
 
 APP_ID = "kz.raissov.HeadphoneSettings"
 START_URI = hp.SCHEME + ":///settings.html"
@@ -35,7 +37,7 @@ REFRESH_AFTER_SET_MS = 2600
 
 class SettingsWindow(Gtk.ApplicationWindow):
     def __init__(self, app):
-        super().__init__(application=app, title="Наушники — настройки")
+        super().__init__(application=app, title=t("app.settings_title"))
         self.set_default_size(WIDTH, HEIGHT)
         self.set_icon_name("audio-headphones")
 
@@ -106,10 +108,11 @@ class SettingsWindow(Gtk.ApplicationWindow):
         def done(res, err):
             if err:
                 self.to_page({"type": "error",
-                              "error": "Наушники не отвечают. Подключены ли они?\n" + err})
+                              "error": t("ui.device_unreachable") + "\n" + err})
                 return False
             self.schema, values = res
-            self.to_page({"type": "init", "schema": self.schema, "values": values})
+            self.to_page({"type": "init", "schema": self.schema,
+                          "values": values, "i18n": i18n.CATALOG})
             return False
 
         self.worker.submit(job, done)

@@ -1,5 +1,5 @@
 [Unit]
-Description=Попап при подключении наушников soundcore
+Description=soundcore headphones connect popup
 After=bluetooth.target
 
 [Service]

@@ -26,6 +26,8 @@ from gi.repository import Gdk, GLib, Gtk, WebKit2  # noqa: E402
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import hpcommon as hp  # noqa: E402
+import i18n  # noqa: E402
+from i18n import t  # noqa: E402
 
 START_URI = hp.SCHEME + ":///index.html"
 SETTINGS_APP = os.path.join(hp.HERE, "settings.py")
@@ -38,15 +40,15 @@ WANTED = [
     "ambientSoundMode", "manualNoiseCanceling",
 ]
 
-STRENGTH_RU = {"Weak": "слабое", "Moderate": "среднее", "Strong": "сильное"}
 
 
 def build_payload(demo=False):
     if demo:
         return {
             "name": "soundcore Sport X20",
+            "i18n": i18n.CATALOG,
             "left": "2/5", "right": "3/5", "case": "5/5",
-            "anc": "NoiseCanceling", "strength": "сильное",
+            "anc": "NoiseCanceling", "strength": t("option.Strong").lower(),
         }
     try:
         d = hp.get_values(WANTED)
@@ -54,11 +56,13 @@ def build_payload(demo=False):
         d = {}
     return {
         "name": "soundcore Sport X20",
+        "i18n": i18n.CATALOG,
         "left": d.get("batteryLevelLeft"),
         "right": d.get("batteryLevelRight"),
         "case": d.get("caseBatteryLevel"),
         "anc": d.get("ambientSoundMode"),
-        "strength": STRENGTH_RU.get(d.get("manualNoiseCanceling") or "", ""),
+        "strength": (t("option." + d["manualNoiseCanceling"]).lower()
+                     if d.get("manualNoiseCanceling") else ""),
     }
 
 
@@ -213,13 +217,13 @@ class Widget:
 
 
 def main():
-    ap = argparse.ArgumentParser(description="3D-виджет наушников")
+    ap = argparse.ArgumentParser(description="Headphone 3D popup widget")
     ap.add_argument("--hold", type=int, default=5000,
-                    help="сколько миллисекунд держать на экране (по умолчанию 5000)")
+                    help="how long to keep it on screen, ms (default 5000)")
     ap.add_argument("--demo", action="store_true",
-                    help="показать с выдуманными данными, не опрашивая наушники")
+                    help="show with fake data without querying the headphones")
     ap.add_argument("--click-test", action="store_true",
-                    help="служебное: синтетический клик по карточке для проверки цепочки")
+                    help="internal: synthetic click on the card to test the chain")
     args = ap.parse_args()
 
     Widget(args.hold, args.demo, args.click_test).run()

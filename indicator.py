@@ -25,6 +25,7 @@ from gi.repository import Gio, GLib, Gtk  # noqa: E402
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import hpcommon as hp  # noqa: E402
+from i18n import t  # noqa: E402
 
 SETTINGS_APP = os.path.join(hp.HERE, "settings.py")
 
@@ -34,12 +35,8 @@ UPOWER_PATH = hp.upower_path()
 # Сигналы приходят пачками — склеиваем их, чтобы не дёргать наушники подряд
 DEBOUNCE_MS = 400
 
-MODES = [
-    ("NoiseCanceling", "Шумоподавление"),
-    ("Transparency", "Прозрачность"),
-    ("Normal", "Обычный режим"),
-]
-STRENGTHS = [("Weak", "Слабое"), ("Moderate", "Среднее"), ("Strong", "Сильное")]
+MODE_KEYS = ["NoiseCanceling", "Transparency", "Normal"]
+STRENGTH_KEYS = ["Weak", "Moderate", "Strong"]
 
 BATTERY_IDS = ["batteryLevelLeft", "batteryLevelRight", "caseBatteryLevel"]
 MODE_IDS = ["ambientSoundMode", "manualNoiseCanceling"]
@@ -84,14 +81,15 @@ class Indicator:
     def build_menu(self):
         self.menu = Gtk.Menu()
 
-        self.item_batt = Gtk.MenuItem(label="Заряд: —")
+        self.item_batt = Gtk.MenuItem(label=t("ui.battery") + ": —")
         self.item_batt.set_sensitive(False)
         self.menu.append(self.item_batt)
         self.menu.append(Gtk.SeparatorMenuItem())
 
         self.mode_items = {}
         group = []
-        for key, title in MODES:
+        for key in MODE_KEYS:
+            title = t("option." + key)
             it = Gtk.RadioMenuItem(label=title)
             it.join_group(group[0] if group else None)
             group.append(it)
@@ -104,28 +102,29 @@ class Indicator:
         sub = Gtk.Menu()
         self.strength_items = {}
         sgroup = []
-        for key, title in STRENGTHS:
+        for key in STRENGTH_KEYS:
+            title = t("option." + key)
             it = Gtk.RadioMenuItem(label=title)
             it.join_group(sgroup[0] if sgroup else None)
             sgroup.append(it)
             it.connect("toggled", self.on_strength, key)
             self.strength_items[key] = it
             sub.append(it)
-        self.item_strength = Gtk.MenuItem(label="Сила шумоподавления")
+        self.item_strength = Gtk.MenuItem(label=t("ui.strength_submenu"))
         self.item_strength.set_submenu(sub)
         self.menu.append(self.item_strength)
 
         self.menu.append(Gtk.SeparatorMenuItem())
 
-        it = Gtk.MenuItem(label="Настройки…")
+        it = Gtk.MenuItem(label=t("ui.settings"))
         it.connect("activate", self.on_settings)
         self.menu.append(it)
 
-        it = Gtk.MenuItem(label="Обновить")
+        it = Gtk.MenuItem(label=t("ui.refresh"))
         it.connect("activate", lambda *_: self.refresh(full=True))
         self.menu.append(it)
 
-        it = Gtk.MenuItem(label="Выход")
+        it = Gtk.MenuItem(label=t("ui.quit"))
         it.connect("activate", lambda *_: Gtk.main_quit())
         self.menu.append(it)
 
@@ -186,12 +185,15 @@ class Indicator:
 
         self.ind.set_status(AppIndicator.IndicatorStatus.ACTIVE)
         self.ind.set_label("—" if worst is None else f"{worst}%", "100%")
-        self.ind.set_icon_full(self.icon_for(worst), "Наушники")
+        self.ind.set_icon_full(self.icon_for(worst), t("app.device_fallback"))
 
-        parts = [f"Л {left}%" if left is not None else "Л —",
-                 f"П {right}%" if right is not None else "П —",
-                 f"кейс {case}%" if case is not None else "кейс —"]
-        self.item_batt.set_label("Заряд:  " + " · ".join(parts))
+        def cell(label_key, value):
+            name = t(label_key)
+            return f"{name} {value}%" if value is not None else f"{name} —"
+
+        parts = [cell("widget.left", left), cell("widget.right", right),
+                 cell("widget.case", case)]
+        self.item_batt.set_label(t("ui.battery") + ":  " + " · ".join(parts))
 
         self.sync_radio()
         return False
@@ -230,7 +232,8 @@ class Indicator:
             if err:
                 subprocess.Popen(
                     ["notify-send", "-i", "dialog-error-symbolic",
-                     "🎧 Наушники", "Не удалось применить: " + err[:120]])
+                     t("notify.anc_title"),
+                     t("ui.apply_failed", name=setting_id) + ": " + err[:120]])
             # состояние отдаётся с задержкой ~2с — перечитываем с запасом
             GLib.timeout_add(2600, lambda: (self.refresh(full=True), False)[1])
             return False

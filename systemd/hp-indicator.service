@@ -1,5 +1,5 @@
 [Unit]
-Description=Индикатор наушников soundcore в панели
+Description=soundcore headphones panel indicator
 PartOf=graphical-session.target
 After=graphical-session.target
 

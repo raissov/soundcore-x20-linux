@@ -1,14 +1,14 @@
 [Desktop Entry]
 Type=Application
-Name=Наушники — настройки
-Name[en]=Headphone Settings
-GenericName=Настройки наушников
-Comment=soundcore: заряд, шумоподавление, эквалайзер, кнопки
-Comment[en]=soundcore: battery, ANC, equalizer, buttons
+Name=Headphone Settings
+Name[ru]=Наушники — настройки
+GenericName=Headphone Settings
+Comment=soundcore: battery, ANC, equalizer, buttons
+Comment[ru]=soundcore: заряд, шумоподавление, эквалайзер, кнопки
 Exec=@PROJECT_DIR@/settings.py
 Icon=audio-headphones
 Terminal=false
 Categories=AudioVideo;Audio;
-Keywords=наушники;headphones;soundcore;anc;bluetooth;заряд;battery;
+Keywords=headphones;soundcore;anc;bluetooth;battery;наушники;заряд;
 StartupNotify=true
 StartupWMClass=settings.py

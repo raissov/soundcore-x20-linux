@@ -9,79 +9,38 @@ const send = (obj) => {
 let SCHEMA = [];
 let VALUES = {};
 
-/* ---------- словари ---------- */
+/* ---------- локализация ----------
+   Каталог приходит от Python вместе с init: один общий источник строк
+   для shell, Python и этой страницы. */
 
-const CAT_RU = {
-  soundModes: 'Режимы звука',
-  equalizer: 'Эквалайзер',
-  equalizerImportExport: 'Профили эквалайзера',
-  buttonConfiguration: 'Кнопки на наушниках',
-  dualConnections: 'Подключение к двум устройствам',
-  miscellaneous: 'Прочее',
-  deviceInformation: 'Об устройстве',
-};
+let I18N = {};
 
-const NAME_RU = {
-  ambientSoundMode: 'Режим',
-  transparencyMode: 'Тип прозрачности',
-  noiseCancelingMode: 'Тип шумоподавления',
-  adaptiveNoiseCanceling: 'Адаптивное сейчас',
-  manualNoiseCanceling: 'Сила шумоподавления',
-  windNoiseSuppression: 'Подавление ветра',
-  windNoiseDetected: 'Ветер обнаружен',
-  presetEqualizerProfile: 'Пресет',
-  importCustomEqualizerProfiles: 'Импорт профилей',
-  exportCustomEqualizerProfiles: 'Экспорт профилей',
-  exportCustomEqualizerProfilesOutput: 'Результат экспорта',
-  customEqualizerProfile: 'Свой профиль',
-  volumeAdjustments: 'Полосы',
-  leftSinglePress: 'Левый — одно нажатие',
-  rightSinglePress: 'Правый — одно нажатие',
-  leftDoublePress: 'Левый — двойное',
-  rightDoublePress: 'Правый — двойное',
-  leftLongPress: 'Левый — долгое',
-  rightLongPress: 'Правый — долгое',
-  normalModeInCycle: 'Обычный режим в цикле',
-  transparencyModeInCycle: 'Прозрачность в цикле',
-  noiseCancelingModeInCycle: 'Шумоподавление в цикле',
-  dualConnections: 'Два устройства',
-  dualConnectionsDevices: 'Сопряжённые устройства',
-  autoPowerOff: 'Автовыключение',
-  surroundSound: 'Объёмный звук',
-  touchTone: 'Звук касания',
-  twsStatus: 'Связь между вкладышами',
-  hostDevice: 'Ведущий вкладыш',
-  isChargingLeft: 'Левый заряжается',
-  isChargingRight: 'Правый заряжается',
-  batteryLevelLeft: 'Заряд левого',
-  batteryLevelRight: 'Заряд правого',
-  caseBatteryLevel: 'Заряд кейса',
-  serialNumber: 'Серийный номер',
-  firmwareVersionLeft: 'Прошивка левого',
-  firmwareVersionRight: 'Прошивка правого',
-};
-
-const OPT_RU = {
-  NoiseCanceling: 'Шумоподавление', Transparency: 'Прозрачность', Normal: 'Обычный',
-  FullyTransparent: 'Полная', VocalMode: 'Голос',
-  Manual: 'Ручное', Adaptive: 'Адаптивное',
-  Weak: 'Слабое', Moderate: 'Среднее', Strong: 'Сильное',
-  VolumeUp: 'Громче', VolumeDown: 'Тише', PreviousSong: 'Предыдущий',
-  NextSong: 'Следующий', PlayPause: 'Пуск/пауза',
-  AmbientSoundMode: 'Смена режима', VoiceAssistant: 'Голосовой помощник',
-  disabled: 'выключено', Yes: 'да', No: 'нет', Connected: 'установлена',
-  '10m': '10 мин', '20m': '20 мин', '30m': '30 мин', '60m': '60 мин',
-  Disconnected: 'нет связи', HighNoise: 'сильный шум', MidNoise: 'средний шум',
-  LowNoise: 'слабый шум',
-};
+function tr(key, fallback, vars) {
+  let str = I18N[key];
+  if (str === undefined) str = fallback;
+  if (vars) {
+    for (const k in vars) str = String(str).split('{' + k + '}').join(vars[k]);
+  }
+  return str;
+}
 
 // Типы, которые эта панель не редактирует
 const UNSUPPORTED = new Set([
   'modifiableSelect', 'importString', 'multiSelect', 'multiSelectWithRemove',
 ]);
 
-const label = (id) => NAME_RU[id] || id;
-const optLabel = (v, i, s) => OPT_RU[v] || (s.localizedOptions && s.localizedOptions[i]) || v;
+const label = (id) => tr('setting.' + id, id);
+const catLabel = (id) => tr('category.' + id, id);
+// Для вариантов есть запасной аэродром: устройство само отдаёт англ. названия
+const optLabel = (v, i, s) =>
+  tr('option.' + v, (s && s.localizedOptions && s.localizedOptions[i]) || v);
+
+function applyStaticLabels() {
+  document.getElementById('refresh').textContent = tr('ui.refresh', 'Refresh');
+  const loading = document.getElementById('loading');
+  if (loading) loading.textContent = tr('ui.loading', 'Reading settings…');
+  document.title = tr('app.settings_title', 'Headphones — Settings');
+}
 
 /* ---------- заряд ---------- */
 
@@ -97,9 +56,9 @@ const colorFor = (p) => (p === null ? 'var(--dim)' : p >= 50 ? 'var(--ok)' : p >
 
 function renderBattery() {
   const cells = [
-    ['Левый', VALUES.batteryLevelLeft, VALUES.isChargingLeft],
-    ['Правый', VALUES.batteryLevelRight, VALUES.isChargingRight],
-    ['Кейс', VALUES.caseBatteryLevel, null],
+    [tr('widget.left', 'Left'), VALUES.batteryLevelLeft, VALUES.isChargingLeft],
+    [tr('widget.right', 'Right'), VALUES.batteryLevelRight, VALUES.isChargingRight],
+    [tr('widget.case', 'Case'), VALUES.caseBatteryLevel, null],
   ];
   const known = [];
   document.getElementById('batt').innerHTML = cells.map(([name, raw, chg]) => {
@@ -110,7 +69,7 @@ function renderBattery() {
       <div class="lbl">${name}</div>
       <div class="val">${p === null ? '—' : p + '%'}</div>
       <div class="track"><i style="width:${p === null ? 0 : Math.max(2, p)}%;background:${colorFor(p)}"></i></div>
-      ${charging ? '<div class="chg">заряжается</div>' : ''}
+      ${charging ? `<div class="chg">${tr('ui.charging', 'charging')}</div>` : ''}
     </div>`;
   }).join('');
   if (known.length) {
@@ -122,7 +81,7 @@ function renderBattery() {
 function renderHeader() {
   const mode = VALUES.ambientSoundMode;
   const strength = VALUES.manualNoiseCanceling;
-  let t = OPT_RU[mode] || mode || 'режим неизвестен';
+  let t = mode ? optLabel(mode, 0, null) : tr('widget.mode_unknown', 'mode unknown');
   if (mode === 'NoiseCanceling' && strength) t += ' · ' + (OPT_RU[strength] || strength).toLowerCase();
   document.getElementById('hsub').innerHTML = `<b>${t}</b>`;
 }
@@ -177,7 +136,7 @@ function ctlOptionalSelect(item, s) {
   const cur = VALUES[s.settingId];
   const sel = document.createElement('select');
   const none = document.createElement('option');
-  none.value = ''; none.textContent = '— не задано —';
+  none.value = ''; none.textContent = tr('ui.not_set', '— not set —');
   none.selected = cur === null || cur === undefined || cur === '';
   sel.appendChild(none);
   opts.forEach((o, i) => {
@@ -208,14 +167,14 @@ function ctlInfo(s) {
   d.className = 'info';
   const v = VALUES[s.settingId];
   const str = v === null || v === undefined ? '' : String(v).trim();
-  d.textContent = str === '' ? '—' : (OPT_RU[str] || str);
+  d.textContent = str === '' ? '—' : optLabel(str, 0, null);
   return d;
 }
 
 function ctlUnsupported() {
   const d = document.createElement('div');
   d.className = 'info';
-  d.textContent = 'в OpenSCQ30';
+  d.textContent = tr('ui.in_openscq30', 'in OpenSCQ30');
   return d;
 }
 
@@ -259,7 +218,7 @@ function render() {
 
     const sec = document.createElement('section');
     const h = document.createElement('h2');
-    h.textContent = CAT_RU[cat.categoryId] || cat.categoryId;
+    h.textContent = catLabel(cat.categoryId);
     sec.appendChild(h);
 
     const group = document.createElement('div');
@@ -270,10 +229,10 @@ function render() {
         group.appendChild(renderEqualizer(s));
         const note = document.createElement('div');
         note.className = 'note';
-        note.textContent =
-          `Полосы показаны только для чтения. Устройство отдаёт ${(VALUES[s.settingId] || []).length} ` +
-          `значений при заявленных ${(s.setting.bandHz || []).length} полосах, поэтому записывать их ` +
-          `отсюда небезопасно — для тонкой настройки откройте OpenSCQ30.`;
+        note.textContent = tr('ui.eq_note', '', {
+          got: (VALUES[s.settingId] || []).length,
+          declared: (s.setting.bandHz || []).length,
+        });
         group.appendChild(note);
         return;
       }
@@ -324,6 +283,7 @@ function clearBusy(id) {
 window.hpSettings = {
   onMessage(m) {
     if (m.type === 'init') {
+      if (m.i18n) { I18N = m.i18n; applyStaticLabels(); }
       SCHEMA = m.schema;
       VALUES = m.values;
       render();
@@ -335,7 +295,8 @@ window.hpSettings = {
       document.getElementById('refresh').disabled = false;
     } else if (m.type === 'setResult') {
       clearBusy(m.id);
-      if (!m.ok) toast('Не удалось применить «' + label(m.id) + '»: ' + (m.error || ''));
+      if (!m.ok) toast(tr('ui.apply_failed', 'Could not apply', { name: label(m.id) })
+                                + ': ' + (m.error || ''));
     } else if (m.type === 'error') {
       document.getElementById('body').innerHTML =
         `<div id="loading">${m.error}</div>`;
